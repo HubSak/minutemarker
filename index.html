@@ -39,7 +39,7 @@ body{
 #app{max-width:520px;margin:0 auto;padding:14px 14px 40px}
 h1{font-size:15px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;margin:6px 0 14px}
 h1 span{color:var(--muted);font-weight:500}
-button,input,select,textarea{font-family:inherit;font-size:16px;color:inherit}
+button,input,select{font-family:inherit;font-size:16px;color:inherit}
 button{cursor:pointer;border:none;background:none;padding:0;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
@@ -78,7 +78,6 @@ button{cursor:pointer;border:none;background:none;padding:0;color:inherit}
 .stepper button{width:46px;height:46px;font-size:22px;font-weight:500;color:var(--ink);display:grid;place-items:center}
 .stepper button:active{background:var(--line)}
 .stepper .val{min-width:52px;text-align:center;font-family:var(--mono);font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
-textarea{width:100%;min-height:88px;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:10px;font-family:var(--mono);font-size:12px;resize:vertical}
 input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:34px;background:transparent}
 input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:99px;background:var(--line)}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--accent);margin-top:-10px;box-shadow:0 1px 3px rgba(0,0,0,.3)}
@@ -242,14 +241,6 @@ details summary::-webkit-details-marker{display:none}
           <button type="button" class="btn" id="saveBtn">Save</button>
         </div>
         <div class="list" id="presetList"></div>
-        <details class="gap-t-lg">
-          <summary>Back up / move to another device</summary>
-          <textarea id="backup" spellcheck="false" aria-label="Preset backup text" placeholder="Your presets appear here as text."></textarea>
-          <div class="row gap-t">
-            <button type="button" class="btn grow" id="copyBtn">Copy</button>
-            <button type="button" class="btn grow" id="loadBtn">Load from text</button>
-          </div>
-        </details>
       </div>
     </details>
 
@@ -315,12 +306,6 @@ function fmt(sec){
 function splitEven(total, n){
   const base = Math.floor(total / n), rem = total - base * n;
   return Array.from({ length: n }, (_, i) => base + (i < rem ? 1 : 0));
-}
-function flash(btn, msg, ms){
-  if(!btn.dataset.label) btn.dataset.label = btn.textContent;
-  btn.textContent = msg;
-  clearTimeout(btn._flash);
-  btn._flash = setTimeout(() => { btn.textContent = btn.dataset.label; }, ms || 1400);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -426,7 +411,7 @@ const total = () => sum(S.durations);
 const sliceBase = () => S.count > 1 ? (S.durations[0] || 0) : total();
 const regenColors = () => { S.sliceColors = makePalette(S.base, Math.max(S.slices, S.count, 1), 0); };
 
-/* Every path into S goes through here: boot, preset load, imported backups.
+/* Every path into S goes through here: boot and preset load.
    Guarantees durations.length === count and sliceColors.length >= slices,
    which the disk renderer relies on. */
 function applyConfig(raw){
@@ -980,7 +965,6 @@ function renderSliceList(){
 function renderPresets(){
   const list = $("#presetList");
   list.textContent = "";
-  $("#backup").value = JSON.stringify(presets);
   syncSummaries();
   if(!presets.length){
     list.appendChild(el("p", "empty", "No presets yet. Set a timer up, name it, and save."));
@@ -1079,25 +1063,6 @@ $("#saveBtn").onclick = () => {
   if(at > -1) presets[at] = entry; else presets.push(entry);
   savePresets();
   setText($("#loadedName"), "· " + name);
-};
-$("#copyBtn").onclick = async () => {
-  const t = $("#backup");
-  try{
-    if(navigator.clipboard) await navigator.clipboard.writeText(t.value);
-    else { t.select(); document.execCommand("copy"); }
-    flash($("#copyBtn"), "Copied");
-  }catch(e){
-    flash($("#copyBtn"), "Select and copy by hand", 2200);
-  }
-};
-$("#loadBtn").onclick = () => {
-  let data = null;
-  try{ data = JSON.parse($("#backup").value); }catch(e){}
-  const ok = Array.isArray(data) && data.every(p => p && typeof p.name === "string" && p.cfg);
-  if(!ok){ flash($("#loadBtn"), "That text isn't a preset list", 2200); return; }
-  presets = data;
-  savePresets();
-  flash($("#loadBtn"), "Loaded");
 };
 
 /* ═══════════════════════════════════════════════════════════════════════

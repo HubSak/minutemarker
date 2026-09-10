@@ -11,7 +11,7 @@ Nothing leaves your device — settings and presets live in your browser's local
 - One disk, or several running in sequence
 - Split a disk into coloured slices that empty one at a time
 - Eight alarm sounds, plus optional chimes between timers and as each slice empties
-- Save named presets, and copy them as text to move to another device
+- Save named presets
 - Works fully offline once installed
 - The alarm still sounds with the screen off
 
@@ -46,7 +46,7 @@ npm install jsdom
 node test-minutemarker.js
 ```
 
-377 checks covering the run loop, the duration picker, audio, presets and offline state.
+371 checks covering the run loop, the duration picker, audio, presets and offline state.
 They drive the real page in jsdom with a fake clock, so timing is deterministic.
 
 jsdom has no layout engine, so the tests cannot exercise real scroll-snapping. The feel
