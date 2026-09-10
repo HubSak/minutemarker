@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MinuteMarker">
+<meta name="theme-color" content="#E6E7E4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121417" media="(prefers-color-scheme: dark)">
+<title>MinuteMarker</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<style>
+/* ── tokens ─────────────────────────────────────────────────────────── */
+:root{
+  --bg:#E6E7E4; --panel:#FBFBF9; --ink:#16181A; --muted:#6B7075;
+  --line:#D3D6D1; --face:#FFFFFF; --tick:rgba(0,0,0,.22); --shadow:0 1px 0 rgba(0,0,0,.05);
+  --accent:#E5352B;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Roboto Mono",monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#121417; --panel:#1B1E22; --ink:#EDEFF1; --muted:#8C939A;
+         --line:#2B2F34; --face:#0B0D0F; --tick:rgba(255,255,255,.22); --shadow:none; }
+}
+
+/* ── base ───────────────────────────────────────────────────────────── */
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--sans);
+  font-size:16px; line-height:1.4;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  overscroll-behavior:none;
+}
+#app{max-width:520px;margin:0 auto;padding:14px 14px 40px}
+h1{font-size:15px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;margin:6px 0 14px}
+h1 span{color:var(--muted);font-weight:500}
+button,input,select,textarea{font-family:inherit;font-size:16px;color:inherit}
+button{cursor:pointer;border:none;background:none;padding:0;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ── layout blocks ──────────────────────────────────────────────────── */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow)}
+.row{display:flex;gap:8px;align-items:center}
+.grow{flex:1}
+.gap-t{margin-top:10px}
+.gap-t-lg{margin-top:12px}
+.gap-b{margin-bottom:10px}
+.label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.label.spaced{margin:18px 0 10px}
+.label b{color:var(--ink);font-variant-numeric:tabular-nums;font-family:var(--mono);letter-spacing:0;font-size:12px}
+.hint{font-size:12px;color:var(--muted);margin:8px 0 0}
+.hint.center{text-align:center}
+.hint.flush{margin:0}
+.empty{font-size:13px;color:var(--muted);padding:4px 0}
+
+/* ── buttons & chips ────────────────────────────────────────────────── */
+.btn{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:11px 14px;font-weight:600;font-size:14px;color:var(--ink);min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);border-color:transparent;color:#fff;width:100%;font-size:16px;letter-spacing:.04em;min-height:56px;border-radius:14px}
+.btn.ghost{background:transparent}
+.btn.go{background:var(--accent);border-color:transparent;color:#fff}
+.btn.wide{width:100%}
+.btn[disabled]{opacity:.4;cursor:default}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:600;min-height:38px;display:inline-flex;align-items:center;color:var(--ink)}
+.chip.on{background:var(--accent);border-color:transparent;color:#fff}
+
+/* ── inputs ─────────────────────────────────────────────────────────── */
+.nameField{background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:12px 10px;width:100%;min-height:48px;font-size:16px;font-weight:600}
+.bigField{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px;min-height:76px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:38px;font-weight:700;letter-spacing:-.01em}
+.bigField:active{background:var(--line)}
+.stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--bg)}
+.stepper button{width:46px;height:46px;font-size:22px;font-weight:500;color:var(--ink);display:grid;place-items:center}
+.stepper button:active{background:var(--line)}
+.stepper .val{min-width:52px;text-align:center;font-family:var(--mono);font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+textarea{width:100%;min-height:88px;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:10px;font-family:var(--mono);font-size:12px;resize:vertical}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:34px;background:transparent}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:99px;background:var(--line)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--accent);margin-top:-10px;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+input[type=range]::-moz-range-track{height:6px;border-radius:99px;background:var(--line)}
+input[type=range]::-moz-range-thumb{width:26px;height:26px;border:none;border-radius:50%;background:var(--accent)}
+
+/* ── colour swatches ────────────────────────────────────────────────── */
+.swatches{display:flex;flex-wrap:wrap;gap:9px}
+.sw{width:38px;height:38px;border-radius:50%;border:2px solid transparent;position:relative;overflow:hidden;display:inline-block;padding:0;background:none}
+.sw.sel{border-color:var(--ink)}
+.sw .dot{position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.sdot{width:15px;height:15px;border-radius:50%;display:inline-block;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+
+/* ── editable lists (timers, slices, presets) ───────────────────────── */
+.list{display:flex;flex-direction:column;gap:7px}
+.lrow{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:7px 10px}
+.lrow .idx{width:20px;height:20px;border-radius:50%;flex:none}
+.lrow .nm{flex:1;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow button.nm{text-align:left;min-height:34px}
+.lrow .meta{color:var(--muted);font-weight:500;font-family:var(--mono)}
+.lrow button.t{width:92px;min-height:38px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 6px;text-align:center;font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:16px}
+.lrow button.t:active{background:var(--line)}
+.lrow .x{width:34px;height:34px;border-radius:8px;color:var(--muted);font-size:18px;display:grid;place-items:center;flex:none}
+
+/* ── switches ───────────────────────────────────────────────────────── */
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:9px 0;min-height:48px;font-size:14px;font-weight:500;text-align:left}
+.toggle + .toggle{border-top:1px solid var(--line)}
+.sw2{width:50px;height:30px;border-radius:999px;background:var(--line);position:relative;flex:none;transition:background .15s}
+.sw2::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--panel);transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.sw2.on{background:var(--accent)}
+.sw2.on::after{transform:translateX(20px)}
+
+/* ── disks ──────────────────────────────────────────────────────────── */
+.previewWrap{display:grid;place-items:center;padding:4px 0 10px}
+.previewWrap svg{width:150px;height:150px}
+.grid{display:grid;gap:10px;margin:4px 0}
+.grid.single .ct{display:none}
+.cell{display:flex;flex-direction:column;align-items:center;gap:4px}
+.cell svg{width:100%;height:auto;display:block}
+.cell .ct{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.cell.active .ct{color:var(--ink)}
+.cell.pending{opacity:.42}
+.cell.done{opacity:.5}
+
+/* ── run screen ─────────────────────────────────────────────────────── */
+#stage{padding:6px 2px}
+#stage.paused .grid{opacity:.55}
+#bigTime{font-family:var(--mono);font-size:clamp(44px,17vw,76px);font-weight:700;letter-spacing:-.02em;text-align:center;font-variant-numeric:tabular-nums;line-height:1;margin:14px 0 2px}
+#subTime{text-align:center;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;min-height:18px}
+#runControls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px}
+.finished #bigTime{color:var(--accent)}
+
+/* ── disclosure panels ──────────────────────────────────────────────── */
+details summary{list-style:none;cursor:pointer;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:4px 0}
+details summary::-webkit-details-marker{display:none}
+.fold{padding:0}
+.fold > summary{display:flex;align-items:center;gap:10px;padding:16px 14px;min-height:54px}
+.fold > summary .sum{display:flex;align-items:center;gap:7px;margin-left:auto;font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink)}
+.fold[open] > summary .sum{display:none}
+.fold > summary .chev{width:9px;height:9px;flex:none;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin-top:-4px;transition:transform .18s}
+.fold[open] > summary .chev{transform:rotate(-135deg);margin-top:3px}
+.fold[open] > summary{border-bottom:1px solid var(--line)}
+.fold .body{padding:14px}
+
+/* ── duration picker ────────────────────────────────────────────────── */
+.sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.5)}
+.sheet[hidden]{display:none}
+.sheetBox{width:100%;max-width:520px;background:var(--panel);border:1px solid var(--line);border-bottom:none;border-radius:20px 20px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.28);padding:16px 14px calc(16px + env(safe-area-inset-bottom))}
+.sheetHead{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:center;margin-bottom:12px}
+.sheetActions{display:flex;gap:8px;margin-top:16px}
+.sheetActions .btn{flex:1}
+.wheelLabels{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:center;margin-bottom:6px}
+.wheelCols{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.wheelBand{position:absolute;left:0;right:0;top:88px;height:44px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);pointer-events:none}
+.wheelScroll{height:220px;overflow-y:scroll;overscroll-behavior:contain;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 20%,#000 80%,transparent);mask-image:linear-gradient(180deg,transparent,#000 20%,#000 80%,transparent)}
+.wheelScroll::-webkit-scrollbar{display:none}
+.wheelPad{height:88px}
+.wheelItem{height:44px;display:grid;place-items:center;scroll-snap-align:center;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:26px;font-weight:600;color:var(--ink);opacity:.4;transition:opacity .12s,color .12s}
+.wheelItem.sel{opacity:1;color:var(--accent)}
+/* keep .wheelPad at (column height - item height) / 2 — see WHEEL_ITEM in the script */
+@media (max-height:600px){
+  .wheelScroll{height:132px}
+  .wheelPad{height:44px}
+  .wheelBand{top:44px}
+}
+
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ───────────── SETUP ───────────── -->
+  <section id="setup">
+    <h1 id="appName">MinuteMarker <span id="loadedName"></span></h1>
+
+    <div class="panel">
+      <div class="previewWrap"><div id="preview"></div></div>
+      <div class="label">Total time</div>
+      <button type="button" class="bigField" id="totalField" aria-label="Total time. Tap to change">5:00</button>
+      <div class="chips gap-t" id="quickChips"></div>
+    </div>
+
+    <details class="panel fold" id="foldLayout">
+      <summary>Timers &amp; colour <span class="chev"></span>
+        <span class="sum"><span class="sdot" id="sumDot"></span><span id="sumLayout">1 timer</span></span>
+      </summary>
+      <div class="body">
+        <div class="label">Timers on screen <b id="countRead">1</b></div>
+        <div class="row">
+          <div class="stepper">
+            <button type="button" id="cMinus" aria-label="Fewer timers">−</button>
+            <div class="val" id="cVal">1</div>
+            <button type="button" id="cPlus" aria-label="More timers">+</button>
+          </div>
+          <button type="button" class="btn ghost grow" id="evenBtn">Divide evenly</button>
+        </div>
+        <div class="list gap-t" id="durList"></div>
+        <p class="hint" id="seqHint" hidden>They run in order: left to right, top to bottom.</p>
+
+        <div class="label spaced">Slices per disk <b id="sliceRead">1</b></div>
+        <div class="row">
+          <div class="stepper">
+            <button type="button" id="sMinus" aria-label="Fewer slices">−</button>
+            <div class="val" id="sVal">1</div>
+            <button type="button" id="sPlus" aria-label="More slices">+</button>
+          </div>
+          <button type="button" class="btn ghost grow" id="sliceEvenBtn">Divide evenly</button>
+        </div>
+        <div class="list gap-t" id="sliceList"></div>
+        <p class="hint" id="sliceHint" hidden></p>
+
+        <div class="label spaced">Colour</div>
+        <div class="swatches" id="palette"></div>
+        <button type="button" class="btn ghost wide gap-t-lg" id="shuffleBtn">Shuffle colours</button>
+        <div class="swatches gap-t-lg" id="sliceSwatches"></div>
+        <p class="hint">Slices empty one at a time, anticlockwise. Shuffle for a different spread of colours.</p>
+      </div>
+    </details>
+
+    <details class="panel fold" id="foldSound">
+      <summary>Sound <span class="chev"></span>
+        <span class="sum"><span id="sumSound">Chime · 100%</span></span>
+      </summary>
+      <div class="body">
+        <div class="chips" id="soundChips"></div>
+        <div class="label spaced">Volume <b id="volRead">100%</b></div>
+        <input type="range" id="vol" min="10" max="100" step="5" value="100" aria-label="Volume">
+        <div id="toggles"></div>
+      </div>
+    </details>
+
+    <details class="panel fold" id="foldPresets">
+      <summary>Presets <span class="chev"></span>
+        <span class="sum"><span id="sumPresets">none yet</span></span>
+      </summary>
+      <div class="body">
+        <div class="row gap-b">
+          <input class="nameField" id="presetName" placeholder="Name" aria-label="Preset name">
+          <button type="button" class="btn" id="saveBtn">Save</button>
+        </div>
+        <div class="list" id="presetList"></div>
+        <details class="gap-t-lg">
+          <summary>Back up / move to another device</summary>
+          <textarea id="backup" spellcheck="false" aria-label="Preset backup text" placeholder="Your presets appear here as text."></textarea>
+          <div class="row gap-t">
+            <button type="button" class="btn grow" id="copyBtn">Copy</button>
+            <button type="button" class="btn grow" id="loadBtn">Load from text</button>
+          </div>
+        </details>
+      </div>
+    </details>
+
+    <button type="button" class="btn primary" id="startBtn">Start</button>
+    <p class="hint center">Add this page to your home screen to use it like an app.</p>
+  </section>
+
+  <!-- ───────────── RUN ───────────── -->
+  <section id="run" hidden>
+    <h1 id="runTitle">Running</h1>
+    <div id="stage">
+      <div class="grid" id="grid"></div>
+      <div id="bigTime" role="timer" aria-live="off">0:00</div>
+      <div id="subTime"></div>
+    </div>
+    <div id="runControls">
+      <button type="button" class="btn" id="toggleBtn">Stop</button>
+      <button type="button" class="btn" id="resetBtn">Reset</button>
+      <button type="button" class="btn" id="editBtn">Edit</button>
+    </div>
+  </section>
+
+</div>
+
+<div class="sheet" id="picker" hidden role="dialog" aria-modal="true" aria-labelledby="pickerTitle">
+  <div class="sheetBox">
+    <div class="sheetHead" id="pickerTitle">Duration</div>
+    <div class="wheelLabels" id="wheelLabels"></div>
+    <div class="wheelCols" id="wheelCols"></div>
+    <div class="sheetActions">
+      <button type="button" class="btn" id="pickCancel">Cancel</button>
+      <button type="button" class="btn primary" id="pickSet">Set</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════════════
+   1. Helpers
+   ═══════════════════════════════════════════════════════════════════════ */
+const $ = s => document.querySelector(s);
+const clamp = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
+const sum = a => a.reduce((x, y) => x + y, 0);
+const smooth = () => !matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function el(tag, cls, text){
+  const n = document.createElement(tag);
+  if(cls) n.className = cls;
+  if(text != null) n.textContent = text;
+  return n;
+}
+/* only touch the DOM when the value actually changed — this runs 60×/s */
+function setText(node, s){ if(node.textContent !== s) node.textContent = s; }
+
+function fmt(sec){
+  sec = Math.max(0, Math.ceil(sec - 0.0001));
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  const pad = v => String(v).padStart(2, "0");
+  return h ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}
+function splitEven(total, n){
+  const base = Math.floor(total / n), rem = total - base * n;
+  return Array.from({ length: n }, (_, i) => base + (i < rem ? 1 : 0));
+}
+function flash(btn, msg, ms){
+  if(!btn.dataset.label) btn.dataset.label = btn.textContent;
+  btn.textContent = msg;
+  clearTimeout(btn._flash);
+  btn._flash = setTimeout(() => { btn.textContent = btn.dataset.label; }, ms || 1400);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   2. Constants
+   ═══════════════════════════════════════════════════════════════════════ */
+const R = 46, CX = 50, CY = 50, NS = "http://www.w3.org/2000/svg";
+const MAX_TIMERS = 16, MAX_SLICES = 16;
+const QUICK_MINS = [1, 2, 3, 5, 10, 15, 20, 30, 45, 60];
+const HEX = /^#[0-9a-f]{6}$/i;
+const PALETTE = ["#E5352B","#F0730A","#F2B705","#63A80F","#0FA36B","#0E9BD1",
+                 "#2F5BEA","#7A3FE0","#D6338C","#8A6242","#4B5563","#111418"];
+const FINISH_BUZZ = [320, 140, 320];
+const APP_NAME = "MinuteMarker";      /* also update <title> and the manifest */
+const KEY = "minutemarker.";          /* localStorage prefix */
+const FOLDS = ["foldLayout", "foldSound", "foldPresets"];
+/* Wheel geometry lives in CSS, not here. The only thing the scroll maths
+   relies on is that .wheelPad is exactly half a column minus half an item,
+   which makes the scroll offset of value i simply i * WHEEL_ITEM whatever
+   the visible row count is. Change one of those in the stylesheet and the
+   other has to move with it. */
+const WHEEL_ITEM = 44, WHEEL_COPIES = 3;
+const WHEELS = [["h", "Hours", 24], ["m", "Minutes", 60], ["s", "Seconds", 60]];
+const MAX_PICK = 24 * 3600 - 1;
+const TOGGLES = [
+  ["repeat",       "Repeat alarm until dismissed"],
+  ["sliceChime",   "Chime as each slice empties"],
+  ["betweenChime", "Chime between timers"],
+  ["vibrate",      "Vibrate"]
+];
+
+/* ═══════════════════════════════════════════════════════════════════════
+   3. Storage (falls back to memory if the browser blocks localStorage)
+   ═══════════════════════════════════════════════════════════════════════ */
+const mem = Object.create(null);
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return mem[k] ?? null; } },
+  set(k, v){ try{ localStorage.setItem(k, v); }catch(e){ mem[k] = v; } }
+};
+function readJSON(key, fallback){
+  try{ const raw = store.get(key); return raw ? JSON.parse(raw) : fallback; }
+  catch(e){ return fallback; }
+}
+const save = () => store.set(KEY + "cfg", JSON.stringify(S));
+function savePresets(){
+  store.set(KEY + "presets", JSON.stringify(presets));
+  renderPresets();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   4. Colour
+   ═══════════════════════════════════════════════════════════════════════ */
+function hexToHsl(hex){
+  const r = parseInt(hex.slice(1, 3), 16) / 255,
+        g = parseInt(hex.slice(3, 5), 16) / 255,
+        b = parseInt(hex.slice(5, 7), 16) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+  const l = (mx + mn) / 2;
+  if(mx === mn) return [0, 0, l * 100];
+  const d = mx - mn;
+  const s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+  const h = (mx === r ? (g - b) / d + (g < b ? 6 : 0)
+           : mx === g ? (b - r) / d + 2
+           :            (r - g) / d + 4) * 60;
+  return [h, s * 100, l * 100];
+}
+function hslToHex(h, s, l){
+  h = ((h % 360) + 360) % 360; s /= 100; l /= 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s,
+        x = c * (1 - Math.abs((h / 60) % 2 - 1)),
+        m = l - c / 2;
+  const [r, g, b] = h < 60  ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x]
+                  : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  const f = v => Math.round((v + m) * 255).toString(16).padStart(2, "0");
+  return "#" + f(r) + f(g) + f(b);
+}
+/* a spread of hues around the base; offset > 0 rotates the whole set */
+function makePalette(base, n, offset){
+  const [h, s, l] = hexToHsl(HEX.test(base) ? base : PALETTE[0]);
+  const step = Math.min(360 / n, 45);
+  const out = [];
+  for(let i = 0; i < n; i++){
+    const k = i + (offset || 0);
+    out.push(i === 0 && !offset ? base : hslToHex(
+      h + k * step,
+      Math.min(92, s + (k % 2 ? 6 : -4)),
+      clamp(l + (k % 3 - 1) * 5, 34, 66)
+    ));
+  }
+  return out;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   5. State
+   ═══════════════════════════════════════════════════════════════════════ */
+const DEFAULTS = {
+  durations:[300], count:1, base:"#E5352B", slices:1, sliceColors:["#E5352B"], sliceDurs:[300],
+  sound:"chime", repeat:false, sliceChime:false, betweenChime:true, vibrate:true, volume:1
+};
+let S = Object.assign({}, DEFAULTS);
+let presets = [];
+
+const total = () => sum(S.durations);
+const sliceBase = () => S.count > 1 ? (S.durations[0] || 0) : total();
+const regenColors = () => { S.sliceColors = makePalette(S.base, Math.max(S.slices, S.count, 1), 0); };
+
+/* Every path into S goes through here: boot, preset load, imported backups.
+   Guarantees durations.length === count and sliceColors.length >= slices,
+   which the disk renderer relies on. */
+function applyConfig(raw){
+  const c = Object.assign({}, DEFAULTS, raw && typeof raw === "object" ? raw : null);
+  const secs = v => Math.max(0, Math.round(Number(v) || 0));
+
+  c.durations = (Array.isArray(c.durations) ? c.durations : []).map(secs).slice(0, MAX_TIMERS);
+  if(!c.durations.length) c.durations = DEFAULTS.durations.slice();
+  c.count  = c.durations.length;
+  c.slices = clamp(Math.round(Number(c.slices) || 1), 1, MAX_SLICES);
+  if(!HEX.test(c.base)) c.base = DEFAULTS.base;
+
+  const need = Math.max(c.slices, c.count, 1);
+  const cols = (Array.isArray(c.sliceColors) ? c.sliceColors : []).filter(v => HEX.test(v));
+  c.sliceColors = cols.length >= need ? cols : makePalette(c.base, need, 0);
+
+  if(!SOUNDS[c.sound]) c.sound = DEFAULTS.sound;
+  c.volume = clamp(Number(c.volume) || 1, 0.1, 1);
+  for(const [key] of TOGGLES) c[key] = !!c[key];
+
+  const durs = (Array.isArray(c.sliceDurs) ? c.sliceDurs : []).map(secs);
+  c.sliceDurs = durs.length === c.slices ? durs : null;
+
+  S = c;
+  if(!S.sliceDurs) S.sliceDurs = splitEven(sliceBase(), S.slices);
+}
+
+/* redistribute slice times to match the timer length, keeping their proportions */
+function fitSlices(){
+  const n = S.slices, base = sliceBase();
+  if(n < 2){ S.sliceDurs = [base]; return; }
+  const vals = normWeights().map(w => Math.max(0, Math.round(w * base)));
+  let diff = base - sum(vals);
+  for(let i = 0; diff !== 0 && i < n * 8; i++){
+    const k = i % n;
+    if(diff > 0){ vals[k]++; diff--; }
+    else if(vals[k] > 0){ vals[k]--; diff++; }
+  }
+  S.sliceDurs = vals;
+}
+function normWeights(){
+  const n = S.slices;
+  let w = (S.sliceDurs || []).slice(0, n);
+  while(w.length < n) w.push(0);
+  let t = sum(w);
+  if(!(t > 0)){ w = new Array(n).fill(1); t = n; }
+  return w.map(v => v / t);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   6. Audio
+   Chimes are rendered into one long WAV and played through an <audio>
+   element rather than synthesised live, so they still sound with the
+   screen off and play at full media volume.
+   ═══════════════════════════════════════════════════════════════════════ */
+const SR = 8000;              // 8 kHz, 8-bit mono ≈ 8 KB per second
+const MAX_TRACK = 2 * 3600;   // don't bake tracks longer than 2 h
+const ALARM_REPEATS = 20;
+
+const SOUNDS = {
+  chime:{ label:"Chime", len:2.0, parts:[
+    {f:880,t:0,d:1.6,g:1},{f:1318.5,t:.16,d:1.5,g:.75},{f:1760,t:.32,d:1.2,g:.45}]},
+  bell:{ label:"Bell", len:2.9, parts:[
+    {f:659,t:0,d:2.6,g:1},{f:1318,t:0,d:1.5,g:.5},{f:1976,t:0,d:.8,g:.3},{f:329,t:0,d:2.6,g:.55}]},
+  marimba:{ label:"Marimba", len:1.9, parts:[
+    {f:523,t:0,d:.7,g:1,w:"tri"},{f:659,t:.12,d:.7,g:1,w:"tri"},
+    {f:784,t:.24,d:.7,g:1,w:"tri"},{f:1046,t:.36,d:1.1,g:1,w:"tri"}]},
+  beeps:{ label:"Beeps", len:1.4, parts:[
+    {f:880,t:0,d:.14,g:.95,w:"sq"},{f:880,t:.26,d:.14,g:.95,w:"sq"},{f:880,t:.52,d:.22,g:.95,w:"sq"}]},
+  alarm:{ label:"Alarm clock", len:2.3, parts:
+    Array.from({length:12}, (_, i) => ({f: i % 2 ? 1150 : 880, t: i * .16, d:.14, g:1, w:"sq"}))},
+  gong:{ label:"Gong", len:3.6, parts:[
+    {f:110,t:0,d:3.4,g:1},{f:164,t:0,d:2.6,g:.55},{f:233,t:0,d:1.8,g:.35},{f:82,t:0,d:3.4,g:.6}]},
+  ping:{ label:"Ping", len:.9, parts:[{f:1568,t:0,d:.5,g:1},{f:2352,t:0,d:.25,g:.35}]},
+  bubble:{ label:"Bubble", len:1.0, parts:[
+    {f:420,to:1200,t:0,d:.3,g:1},{f:760,to:1600,t:.2,d:.32,g:.75}]}
+};
+const TICK    = { len:.4, parts:[{f:1245,t:0,d:.25,g:.8},{f:1868,t:0,d:.12,g:.3}] };
+const BETWEEN = { len:.9, parts:[{f:784,t:0,d:.45,g:1},{f:1046,t:.09,d:.55,g:.8}] };
+
+const soundFor = k => SOUNDS[k] || SOUNDS.chime;
+const alarmGap = snd => Math.max(2, snd.len + 0.8);
+
+/* additive synthesis straight into 8-bit PCM, soft-clipped */
+function renderInto(pcm, atSec, snd, scale){
+  for(const p of snd.parts){
+    const start = Math.round((atSec + p.t) * SR), n = Math.ceil(p.d * SR);
+    let phase = 0;
+    for(let i = 0; i < n; i++){
+      const idx = start + i;
+      if(idx < 0) continue;
+      if(idx >= pcm.length) break;
+      const tt = i / SR, x = tt / p.d;
+      let env = Math.exp(-4.2 * x) * (1 - x * x);
+      if(tt < 0.004) env *= tt / 0.004;
+      const f = p.to ? p.f * Math.pow(p.to / p.f, x) : p.f;
+      phase += 2 * Math.PI * f / SR;
+      const s = p.w === "sq"  ? (Math.sin(phase) >= 0 ? 1 : -1)
+              : p.w === "tri" ? (2 / Math.PI) * Math.asin(Math.sin(phase))
+              :                 Math.sin(phase);
+      const v = (pcm[idx] - 128) / 127 + s * env * p.g * scale;
+      pcm[idx] = 128 + Math.round(Math.tanh(v) * 127);
+    }
+  }
+}
+/* header and samples share one buffer, so the Blob doesn't force a second copy */
+function silentWav(sec){
+  const n = Math.ceil(sec * SR);
+  const buf = new Uint8Array(44 + n);
+  const v = new DataView(buf.buffer);
+  const tag = (o, s) => { for(let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  tag(0, "RIFF");  v.setUint32(4, 36 + n, true);  tag(8, "WAVEfmt ");
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, SR, true); v.setUint32(28, SR, true);
+  v.setUint16(32, 1, true);  v.setUint16(34, 8, true);
+  tag(36, "data"); v.setUint32(40, n, true);
+  buf.fill(128, 44);
+  return { buf, pcm: buf.subarray(44) };
+}
+const wavUrl = buf => URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+
+/* silence with every chime, every tick and the alarm baked in at its offset */
+function buildTrack(){
+  const evs = [];
+  const w = S.slices > 1 && S.sliceChime ? normWeights() : null;
+  let acc = 0;
+  for(let i = 0; i < S.count; i++){
+    const d = S.durations[i];
+    if(w){
+      let c = 0;
+      for(let k = 0; k < S.slices - 1; k++){ c += w[k]; evs.push([acc + d * c, TICK]); }
+    }
+    acc += d;
+    if(i < S.count - 1 && S.betweenChime) evs.push([acc, BETWEEN]);
+  }
+  const snd = soundFor(S.sound);
+  evs.push([acc, snd]);
+
+  let tail = snd.len + 0.6;
+  if(S.repeat){
+    const gap = alarmGap(snd);
+    for(let r = 1; r <= ALARM_REPEATS; r++) evs.push([acc + r * gap, snd]);
+    tail = ALARM_REPEATS * gap + snd.len + 0.6;
+  }
+  const len = acc + tail;
+  if(!isFinite(len) || len <= 0 || len > MAX_TRACK) return null;
+
+  try{
+    const { buf, pcm } = silentWav(len);
+    for(const [t, s] of evs) renderInto(pcm, t, s, S.volume);
+    return wavUrl(buf);
+  }catch(e){
+    return null;   // out of memory: fall back to live chimes
+  }
+}
+
+const track = new Audio(), cue = new Audio();
+for(const a of [track, cue]){ a.preload = "auto"; a.setAttribute("playsinline", ""); }
+let trackUrl = null, trackOK = false, cueUrl = null;
+
+/* true when nothing is baked, so chimes have to be fired from the loop */
+const liveAudio = () => !(trackUrl && trackOK);
+
+function playCue(snd){
+  if(cueUrl) URL.revokeObjectURL(cueUrl);
+  const { buf, pcm } = silentWav(snd.len + 0.3);
+  renderInto(pcm, 0.02, snd, S.volume);
+  cueUrl = wavUrl(buf);
+  cue.src = cueUrl;
+  cue.play().catch(() => {});
+}
+function loadTrack(){
+  freeTrack();
+  trackUrl = buildTrack();
+  if(!trackUrl) return;
+  trackOK = true;          // assume good; the play() rejection below clears it
+  track.src = trackUrl;
+  track.load();
+}
+function playTrack(fromSec){
+  if(!trackUrl) return;
+  try{ track.currentTime = Math.max(0, fromSec); }catch(e){}
+  track.play().then(() => { trackOK = true; }).catch(() => { trackOK = false; });
+}
+const pauseTrack = () => track.pause();
+function freeTrack(){
+  track.pause();
+  if(trackUrl){ URL.revokeObjectURL(trackUrl); trackUrl = null; }
+  trackOK = false;
+}
+function buzz(pattern){
+  if(S.vibrate && navigator.vibrate) try{ navigator.vibrate(pattern); }catch(e){}
+}
+
+/* lock-screen / headphone controls */
+function initMediaSession(){
+  if(!("mediaSession" in navigator)) return;
+  try{
+    navigator.mediaSession.setActionHandler("play",  () => { if(run.on && run.mode !== "running") $("#toggleBtn").click(); });
+    navigator.mediaSession.setActionHandler("pause", () => { if(run.on && run.mode === "running") $("#toggleBtn").click(); });
+  }catch(e){}
+}
+function syncMediaSession(){
+  if(!("mediaSession" in navigator)) return;
+  try{
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: $("#runTitle").textContent, artist: APP_NAME
+    });
+    navigator.mediaSession.playbackState = run.mode === "running" ? "playing" : "paused";
+  }catch(e){}
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   7. Disks
+   ═══════════════════════════════════════════════════════════════════════ */
+const FULL = `M ${CX} ${CY - R} A ${R} ${R} 0 1 1 ${CX - 0.01} ${CY - R} Z`;
+function pt(a){ const r = (a - 90) * Math.PI / 180; return [CX + R * Math.cos(r), CY + R * Math.sin(r)]; }
+function wedge(a0, a1){
+  if(a1 - a0 <= 0.02) return "";
+  if(a1 - a0 >= 359.9) return FULL;
+  const p0 = pt(a0), p1 = pt(a1), big = (a1 - a0) > 180 ? 1 : 0;
+  return `M ${CX} ${CY} L ${p0[0].toFixed(2)} ${p0[1].toFixed(2)} `
+       + `A ${R} ${R} 0 ${big} 1 ${p1[0].toFixed(2)} ${p1[1].toFixed(2)} Z`;
+}
+/* slice 1 empties first, so it sits at the far end of the sweep */
+function spansFor(){
+  if(S.slices <= 1) return [[0, 360]];
+  const w = normWeights(), out = [];
+  let acc = 1;
+  for(const v of w){ out.push([(acc - v) * 360, acc * 360]); acc -= v; }
+  return out;
+}
+function colorsFor(i){
+  if(S.slices > 1) return S.sliceColors.slice(0, S.slices);
+  return [S.count > 1 ? (S.sliceColors[i % S.sliceColors.length] || S.base) : S.base];
+}
+function svgEl(tag, attrs){
+  const n = document.createElementNS(NS, tag);
+  for(const k in attrs) n.setAttribute(k, attrs[k]);
+  return n;
+}
+function makeDisk(colors, spans){
+  const svg = svgEl("svg", { viewBox: "0 0 100 100" });
+  svg.appendChild(svgEl("circle", { cx: CX, cy: CY, r: R, fill: "var(--face)" }));
+
+  /* one path per span, so the wedges can never outnumber the colours */
+  const paths = spans.map((_, i) => {
+    const p = svgEl("path", { fill: colors[i % colors.length] || DEFAULTS.base });
+    svg.appendChild(p);
+    return p;
+  });
+
+  for(let i = 0; i < 12; i++){
+    const a = i * 30, major = i % 3 === 0;
+    const [x1, y1] = pt(a);
+    const rr = (a - 90) * Math.PI / 180, o = R - (major ? 7 : 4);
+    svg.appendChild(svgEl("line", {
+      x1: x1.toFixed(2), y1: y1.toFixed(2),
+      x2: (CX + o * Math.cos(rr)).toFixed(2), y2: (CY + o * Math.sin(rr)).toFixed(2),
+      stroke: "var(--tick)", "stroke-width": major ? 1.4 : 0.8, "stroke-linecap": "round"
+    }));
+  }
+  svg.appendChild(svgEl("circle", { cx: CX, cy: CY, r: R, fill: "none", stroke: "var(--line)", "stroke-width": 1.6 }));
+  svg.appendChild(svgEl("circle", { cx: CX, cy: CY, r: 2.4, fill: "var(--muted)" }));
+  return { svg, paths, spans };
+}
+function drawDisk(d, frac){
+  const theta = clamp(frac, 0, 1) * 360;
+  for(let i = 0; i < d.paths.length; i++){
+    const [from, to] = d.spans[i];
+    const path = d.paths[i];
+    const next = theta > from ? wedge(from, Math.min(to, theta)) : "";
+    if(path._d !== next){ path._d = next; path.setAttribute("d", next); }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   8. Duration picker
+   A scroll-snapping drum. Each column repeats its range three times and
+   silently re-centres on the middle copy once scrolling settles, which is
+   what makes 23 → 00 wrap. Geometry is fixed in CSS, so the position ↔
+   value conversion below is pure arithmetic and never measures the DOM.
+   ═══════════════════════════════════════════════════════════════════════ */
+const wheelIndexAt = scrollTop => Math.round(scrollTop / WHEEL_ITEM);
+const wheelTopFor  = idx => idx * WHEEL_ITEM;
+const wrapTo = (v, n) => ((v % n) + n) % n;
+
+const picker = { open: false, cols: {}, onSet: null, returnTo: null };
+
+function buildPicker(){
+  const labels = $("#wheelLabels"), cols = $("#wheelCols");
+
+  for(const [key, label, n] of WHEELS){
+    labels.appendChild(el("span", null, label));
+
+    const sc = el("div", "wheelScroll");
+    sc.tabIndex = 0;
+    sc.dataset.key = key;
+    /* a drum is a spinbutton, not a 180-option listbox */
+    sc.setAttribute("role", "spinbutton");
+    sc.setAttribute("aria-label", label);
+    sc.setAttribute("aria-valuemin", "0");
+    sc.setAttribute("aria-valuemax", String(n - 1));
+
+    sc.appendChild(el("div", "wheelPad"));
+    const items = [];
+    for(let c = 0; c < WHEEL_COPIES; c++)
+      for(let v = 0; v < n; v++){
+        const it = el("div", "wheelItem", String(v).padStart(2, "0"));
+        it.setAttribute("aria-hidden", "true");
+        sc.appendChild(it);
+        items.push(it);
+      }
+    sc.appendChild(el("div", "wheelPad"));
+    cols.appendChild(sc);
+
+    const col = { key, n, label, el: sc, items, value: 0, idx: 0, sel: null, settle: 0 };
+    picker.cols[key] = col;
+    sc.addEventListener("scroll", () => onWheelScroll(col));
+    sc.addEventListener("keydown", e => onWheelKey(e, col));
+  }
+  cols.appendChild(el("div", "wheelBand"));
+
+  $("#pickCancel").onclick = closePicker;
+  $("#pickSet").onclick = commitPicker;
+  $("#picker").onclick = e => { if(e.target === $("#picker")) closePicker(); };
+  $("#picker").addEventListener("keydown", onPickerKey);
+}
+
+function markWheel(col, idx){
+  col.idx = idx;
+  col.value = idx % col.n;
+  const it = col.items[idx];
+  if(col.sel !== it){
+    if(col.sel) col.sel.classList.remove("sel");
+    if(it) it.classList.add("sel");
+    col.sel = it;
+  }
+  col.el.setAttribute("aria-valuenow", String(col.value));
+  col.el.setAttribute("aria-valuetext", col.value + " " + col.label.toLowerCase());
+}
+/* jump straight to a value in the middle copy */
+function setWheel(col, value){
+  const idx = wrapTo(value, col.n) + col.n;
+  markWheel(col, idx);
+  col.el.scrollTop = wheelTopFor(idx);
+}
+function onWheelScroll(col){
+  markWheel(col, clamp(wheelIndexAt(col.el.scrollTop), 0, col.items.length - 1));
+  clearTimeout(col.settle);
+  col.settle = setTimeout(() => recentreWheel(col), 140);
+}
+/* once the finger is off and the snap has landed, hop back to the middle copy
+   at the same value; the offset is a whole number of copies so it is invisible,
+   and it leaves an equal run of values available in both directions */
+function recentreWheel(col){
+  if(col.idx !== col.value + col.n) setWheel(col, col.value);
+}
+function onWheelKey(e, col){
+  const step = { ArrowUp: -1, ArrowDown: 1, PageUp: -5, PageDown: 5 }[e.key];
+  if(step !== undefined) setWheel(col, col.value + step);
+  else if(e.key === "Home") setWheel(col, 0);
+  else if(e.key === "End") setWheel(col, col.n - 1);
+  else return;
+  e.preventDefault();
+}
+function onPickerKey(e){
+  if(e.key === "Escape"){ e.preventDefault(); closePicker(); return; }
+  if(e.key === "Enter"){ e.preventDefault(); commitPicker(); return; }
+  if(e.key !== "Tab") return;
+  const f = [...$("#picker").querySelectorAll(".wheelScroll, button")];
+  const edge = e.shiftKey ? f[0] : f[f.length - 1];
+  if(document.activeElement === edge){
+    e.preventDefault();
+    (e.shiftKey ? f[f.length - 1] : f[0]).focus();
+  }
+}
+
+function openPicker(seconds, title, onSet){
+  picker.onSet = onSet;
+  picker.returnTo = document.activeElement;
+  picker.open = true;
+  setText($("#pickerTitle"), title);
+  $("#picker").hidden = false;
+  void $("#wheelCols").offsetHeight;       // flush layout: a hidden box can't be scrolled
+  document.body.style.overflow = "hidden";
+  const t = clamp(Math.round(seconds) || 0, 0, MAX_PICK);
+  setWheel(picker.cols.h, Math.floor(t / 3600));
+  setWheel(picker.cols.m, Math.floor(t % 3600 / 60));
+  setWheel(picker.cols.s, t % 60);
+  picker.cols.h.el.focus();
+}
+function closePicker(){
+  if(!picker.open) return;
+  picker.open = false;
+  picker.onSet = null;
+  $("#picker").hidden = true;
+  document.body.style.overflow = "";
+  if(picker.returnTo && picker.returnTo.focus) picker.returnTo.focus();
+  picker.returnTo = null;
+}
+function pickerSeconds(){
+  return picker.cols.h.value * 3600 + picker.cols.m.value * 60 + picker.cols.s.value;
+}
+function commitPicker(){
+  const apply = picker.onSet, seconds = pickerSeconds();
+  closePicker();
+  if(apply) apply(seconds);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   9. Setup screen — built once, then synced
+   ═══════════════════════════════════════════════════════════════════════ */
+function buildQuickChips(){
+  const box = $("#quickChips");
+  for(const m of QUICK_MINS){
+    const b = el("button", "chip", String(m));
+    b.type = "button";
+    b.setAttribute("aria-label", `${m} minute${m > 1 ? "s" : ""}`);
+    b.onclick = () => setTotal(m * 60);
+    box.appendChild(b);
+  }
+}
+function buildPalette(){
+  const box = $("#palette");
+  for(const c of PALETTE){
+    const b = el("button", "sw");
+    b.type = "button";
+    b.dataset.color = c;
+    b.setAttribute("aria-label", "Colour " + c);
+    const dot = el("span", "dot");
+    dot.style.background = c;
+    b.appendChild(dot);
+    b.onclick = () => { S.base = c; regenColors(); refresh(); save(); };
+    box.appendChild(b);
+  }
+}
+function syncPalette(){
+  for(const b of $("#palette").children)
+    b.classList.toggle("sel", b.dataset.color.toLowerCase() === S.base.toLowerCase());
+}
+function buildSoundChips(){
+  const box = $("#soundChips");
+  for(const k of Object.keys(SOUNDS)){
+    const b = el("button", "chip", SOUNDS[k].label);
+    b.type = "button";
+    b.dataset.sound = k;
+    b.onclick = () => { S.sound = k; syncSounds(); syncSummaries(); playCue(SOUNDS[k]); save(); };
+    box.appendChild(b);
+  }
+  const v = $("#vol");
+  v.oninput  = () => { S.volume = v.value / 100; setText($("#volRead"), v.value + "%"); };
+  v.onchange = () => { save(); syncSummaries(); playCue(soundFor(S.sound)); };
+}
+function syncSounds(){
+  for(const b of $("#soundChips").children){
+    const on = b.dataset.sound === S.sound;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", on);
+  }
+  const pct = Math.round(S.volume * 100);
+  $("#vol").value = pct;
+  setText($("#volRead"), pct + "%");
+}
+function buildToggles(){
+  const box = $("#toggles");
+  for(const [key, label] of TOGGLES){
+    const b = el("button", "toggle");
+    b.type = "button";
+    b.setAttribute("role", "switch");
+    b.dataset.key = key;
+    b.append(el("span", null, label), el("span", "sw2"));
+    b.onclick = () => { S[key] = !S[key]; syncToggles(); save(); };
+    box.appendChild(b);
+  }
+}
+function syncToggles(){
+  for(const b of $("#toggles").children){
+    const on = !!S[b.dataset.key];
+    b.setAttribute("aria-checked", on);
+    b.lastChild.classList.toggle("on", on);
+  }
+}
+
+let previewSig = "";
+function renderPreview(){
+  const spans = spansFor(), colors = colorsFor(0);
+  const sig = JSON.stringify([spans, colors]);
+  if(sig === previewSig) return;            // nothing about the shape changed
+  previewSig = sig;
+  const box = $("#preview");
+  box.textContent = "";
+  const d = makeDisk(colors, spans);
+  box.appendChild(d.svg);
+  drawDisk(d, 1);
+}
+function renderSliceSwatches(){
+  const box = $("#sliceSwatches");
+  box.textContent = "";
+  const n = S.slices > 1 ? S.slices : (S.count > 1 ? S.count : 0);
+  if(!n){
+    box.appendChild(el("p", "hint flush", "One solid disk in the colour above."));
+    return;
+  }
+  for(let i = 0; i < n; i++){
+    const s = el("span", "sw");
+    const dot = el("span", "dot");
+    dot.style.background = S.sliceColors[i] || S.base;
+    s.appendChild(dot);
+    box.appendChild(s);
+  }
+}
+/* one editable time row: coloured dot, name, duration button */
+function timeRow(colour, name, seconds, onCommit){
+  const row = el("div", "lrow");
+  const dot = el("span", "idx");
+  dot.style.background = colour;
+  const btn = el("button", "t", fmt(seconds));
+  btn.type = "button";
+  btn.setAttribute("aria-label", `${name}, ${fmt(seconds)}. Tap to change`);
+  btn.onclick = () => openPicker(seconds, name, onCommit);
+  row.append(dot, el("span", "nm", name), btn);
+  return row;
+}
+function renderDurations(){
+  const list = $("#durList");
+  list.textContent = "";
+  $("#seqHint").hidden = S.count < 2;
+  if(S.count < 2) return;
+  S.durations.forEach((d, i) => list.appendChild(
+    timeRow(colorsFor(i)[0], "Timer " + (i + 1), d, v => {
+      S.durations[i] = v; fitSlices(); refresh(); save();
+    })
+  ));
+}
+function renderSliceList(){
+  const list = $("#sliceList"), hint = $("#sliceHint");
+  list.textContent = "";
+  hint.hidden = S.slices < 2;
+  if(S.slices < 2) return;
+  hint.textContent = "Slice 1 empties first, then 2, and so on."
+    + (S.count > 1 ? " With several timers these times are scaled to fit each one." : "");
+  S.sliceDurs.slice(0, S.slices).forEach((d, i) => list.appendChild(
+    timeRow(S.sliceColors[i] || S.base, "Slice " + (i + 1), d, v => {
+      S.sliceDurs[i] = v;
+      if(S.count === 1) S.durations = [sum(S.sliceDurs)];
+      refresh(); save();
+    })
+  ));
+}
+function renderPresets(){
+  const list = $("#presetList");
+  list.textContent = "";
+  $("#backup").value = JSON.stringify(presets);
+  syncSummaries();
+  if(!presets.length){
+    list.appendChild(el("p", "empty", "No presets yet. Set a timer up, name it, and save."));
+    return;
+  }
+  presets.forEach((p, i) => {
+    const cfg = p.cfg || {};
+    const cols = (cfg.sliceColors || [cfg.base]).slice(0, cfg.slices);
+    const row = el("div", "lrow");
+
+    const dot = el("span", "idx");
+    dot.style.background = cfg.slices > 1 ? `conic-gradient(${cols.join(",")})` : cfg.base;
+
+    const nm = el("button", "nm");
+    nm.type = "button";
+    nm.append(p.name + " ");
+    nm.appendChild(el("span", "meta",
+      `· ${fmt(sum(cfg.durations || []))}${cfg.count > 1 ? " · " + cfg.count + "×" : ""}`));
+    nm.onclick = () => loadPreset(p);
+
+    const x = el("button", "x", "×");
+    x.type = "button";
+    x.setAttribute("aria-label", "Delete " + p.name);
+    x.onclick = () => { presets.splice(i, 1); savePresets(); };
+
+    row.append(dot, nm, x);
+    list.appendChild(row);
+  });
+}
+function syncSummaries(){
+  const cols = S.sliceColors.slice(0, Math.max(S.slices, S.count, 1));
+  $("#sumDot").style.background = S.slices > 1 ? `conic-gradient(${cols.join(",")})` : S.base;
+  setText($("#sumLayout"), `${S.count} timer${S.count > 1 ? "s" : ""}`
+    + (S.slices > 1 ? ` · ${S.slices} slices` : ""));
+  setText($("#sumSound"), `${soundFor(S.sound).label} · ${Math.round(S.volume * 100)}%`);
+  setText($("#sumPresets"), presets.length ? `${presets.length} saved` : "none yet");
+}
+function syncTotals(){
+  const t = total();
+  setText($("#totalField"), fmt(t));
+  setText($("#cVal"), String(S.count));   setText($("#countRead"), String(S.count));
+  setText($("#sVal"), String(S.slices));  setText($("#sliceRead"), String(S.slices));
+  $("#startBtn").disabled = t <= 0;
+}
+function refresh(){
+  document.documentElement.style.setProperty("--accent", S.base);
+  syncTotals();
+  syncPalette(); syncSounds(); syncToggles(); syncSummaries();
+  renderSliceSwatches(); renderDurations(); renderSliceList(); renderPreview();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   10. Setup events
+   ═══════════════════════════════════════════════════════════════════════ */
+function setTotal(sec){
+  S.durations = splitEven(Math.max(0, Math.round(sec)), S.count);
+  fitSlices(); refresh(); save();
+}
+function setCount(n){
+  if(n < 1 || n > MAX_TIMERS) return;
+  const t = total();
+  S.count = n;
+  S.durations = splitEven(t, n);
+  fitSlices(); regenColors(); refresh(); save();
+}
+function setSlices(n){
+  if(n < 1 || n > MAX_SLICES) return;
+  S.slices = n;
+  S.sliceDurs = splitEven(sliceBase(), n);
+  regenColors(); refresh(); save();
+}
+
+$("#totalField").onclick   = () => openPicker(total(), "Total time", setTotal);
+$("#evenBtn").onclick      = () => setTotal(total());
+$("#cPlus").onclick        = () => setCount(S.count + 1);
+$("#cMinus").onclick       = () => setCount(S.count - 1);
+$("#sPlus").onclick        = () => setSlices(S.slices + 1);
+$("#sMinus").onclick       = () => setSlices(S.slices - 1);
+$("#sliceEvenBtn").onclick = () => { S.sliceDurs = splitEven(sliceBase(), S.slices); refresh(); save(); };
+$("#shuffleBtn").onclick   = () => {
+  S.sliceColors = makePalette(S.base, Math.max(S.slices, S.count, 1), 1 + Math.floor(Math.random() * 7));
+  refresh(); save();
+};
+
+function loadPreset(p){
+  applyConfig(p.cfg);
+  setText($("#loadedName"), "· " + p.name);
+  $("#presetName").value = p.name;
+  refresh(); save();
+  window.scrollTo({ top: 0, behavior: smooth() ? "smooth" : "auto" });
+}
+$("#saveBtn").onclick = () => {
+  const name = ($("#presetName").value || "").trim() || ("Preset " + (presets.length + 1));
+  const entry = { name, cfg: JSON.parse(JSON.stringify(S)) };
+  const at = presets.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+  if(at > -1) presets[at] = entry; else presets.push(entry);
+  savePresets();
+  setText($("#loadedName"), "· " + name);
+};
+$("#copyBtn").onclick = async () => {
+  const t = $("#backup");
+  try{
+    if(navigator.clipboard) await navigator.clipboard.writeText(t.value);
+    else { t.select(); document.execCommand("copy"); }
+    flash($("#copyBtn"), "Copied");
+  }catch(e){
+    flash($("#copyBtn"), "Select and copy by hand", 2200);
+  }
+};
+$("#loadBtn").onclick = () => {
+  let data = null;
+  try{ data = JSON.parse($("#backup").value); }catch(e){}
+  const ok = Array.isArray(data) && data.every(p => p && typeof p.name === "string" && p.cfg);
+  if(!ok){ flash($("#loadBtn"), "That text isn't a preset list", 2200); return; }
+  presets = data;
+  savePresets();
+  flash($("#loadBtn"), "Loaded");
+};
+
+/* ═══════════════════════════════════════════════════════════════════════
+   11. Run screen
+   ═══════════════════════════════════════════════════════════════════════ */
+const run = {
+  on:false, mode:"ready", start:0, pausedAt:0, lost:0,
+  disks:[], spans:[[0, 360]], ti:0, si:1, finished:false, alarmId:0, raf:0
+};
+const elapsed = () => Math.max(0, ((run.pausedAt || Date.now()) - run.start - run.lost) / 1000);
+
+function buildGrid(){
+  const g = $("#grid");
+  g.textContent = "";
+  run.disks = [];
+  run.spans = spansFor();
+
+  const n = S.count;
+  g.classList.toggle("single", n === 1);
+  g.style.gridTemplateColumns = `repeat(${n <= 1 ? 1 : n <= 3 ? n : n <= 4 ? 2 : n <= 9 ? 3 : 4},1fr)`;
+
+  for(let i = 0; i < n; i++){
+    const cell = el("div", "cell");
+    const d = makeDisk(colorsFor(i), run.spans);
+    const t = el("div", "ct", fmt(S.durations[i]));
+    cell.append(d.svg, t);
+    g.appendChild(cell);
+    run.disks.push({ d, cell, t });
+    drawDisk(d, 1);
+  }
+}
+function setMode(m){
+  run.mode = m;
+  const b = $("#toggleBtn");
+  setText(b, m === "running" ? "Stop" : m === "finished" ? "Dismiss" : "Start");
+  b.classList.toggle("go", m !== "running");
+  $("#stage").classList.toggle("paused", m === "stopped");
+  $("#run").classList.toggle("finished", m === "finished");
+  syncMediaSession();
+}
+
+/* one full repaint; returns false once everything has run out */
+function paint(){
+  const e = elapsed();
+  let acc = 0, active = -1, rem = 0;
+
+  for(let i = 0; i < S.count; i++){
+    const d = S.durations[i];
+    const f = e <= acc ? 1 : e >= acc + d ? 0 : 1 - (e - acc) / d;
+    const { d: disk, cell, t } = run.disks[i];
+    drawDisk(disk, f);
+    const cls = "cell " + (f <= 0 ? "done" : e > acc ? "active" : "pending");
+    if(cell.className !== cls) cell.className = cls;
+    setText(t, fmt(d * f));
+    if(active < 0 && f > 0){ active = i; rem = d * f; }
+    acc += d;
+  }
+
+  if(e >= acc){
+    if(!run.finished) finish();
+    return false;
+  }
+  tickChimes(active, rem);
+  setText($("#bigTime"), fmt(rem));
+  const state = run.mode === "stopped" ? "Paused" : run.mode === "ready" ? "Ready" : "";
+  const info  = S.count > 1 ? `Timer ${active + 1} of ${S.count} · ${fmt(acc - e)} left in total` : "";
+  setText($("#subTime"), [state, info].filter(Boolean).join(" · "));
+  return true;
+}
+/* chimes the baked track can't cover, plus vibration (never baked) */
+function tickChimes(active, rem){
+  const live = liveAudio();
+  if(active > run.ti){
+    run.ti = active;
+    run.si = S.slices;
+    if(S.betweenChime && live) playCue(BETWEEN);
+    buzz(60);
+  }
+  if(S.slices > 1 && S.sliceChime && active >= 0){
+    const theta = rem / (S.durations[active] || 1) * 360;
+    let left = 0;
+    for(const [from] of run.spans) if(theta > from) left++;
+    if(left < run.si){
+      run.si = left;
+      if(live && left > 0) playCue(TICK);   // the last slice coincides with the alarm
+    }
+  }
+}
+function finish(){
+  run.finished = true;
+  setText($("#bigTime"), "0:00");
+  setText($("#subTime"), "Time's up");
+  setMode("finished");
+  buzz(FINISH_BUZZ);
+
+  const snd = soundFor(S.sound), live = liveAudio();
+  if(live) playCue(snd);
+  if(S.repeat) run.alarmId = setInterval(() => {
+    if(liveAudio()) playCue(snd);
+    buzz(FINISH_BUZZ);
+  }, alarmGap(snd) * 1000);
+}
+function stopAlarm(){
+  if(run.alarmId){ clearInterval(run.alarmId); run.alarmId = 0; }
+  cue.pause();
+}
+
+/* a single rAF chain, guarded so Edit → Start can't start a second one */
+function frame(){
+  run.raf = 0;
+  if(!run.on) return;
+  if(paint() && run.mode === "running") run.raf = requestAnimationFrame(frame);
+}
+function startLoop(){ if(!run.raf && run.on) run.raf = requestAnimationFrame(frame); }
+function stopLoop(){ if(run.raf){ cancelAnimationFrame(run.raf); run.raf = 0; } }
+
+function startRun(){
+  buildGrid();
+  Object.assign(run, {
+    on:true, start:Date.now(), pausedAt:0, lost:0,
+    ti:0, si:S.slices, finished:false
+  });
+  $("#setup").hidden = true;
+  $("#run").hidden = false;
+  setText($("#runTitle"), ($("#presetName").value || "").trim() || "Timer");
+  loadTrack();
+  playTrack(0);
+  setMode("running");
+  startLoop();
+}
+function stopRun(){
+  run.on = false;
+  stopLoop(); stopAlarm(); freeTrack();
+  $("#run").hidden = true;
+  $("#setup").hidden = false;
+}
+function resetRun(){
+  stopAlarm(); pauseTrack(); stopLoop();
+  const now = Date.now();
+  Object.assign(run, {
+    start:now, lost:0, pausedAt:now,       // held at zero elapsed
+    ti:0, si:S.slices, finished:false
+  });
+  setMode("ready");
+  paint();
+}
+
+$("#startBtn").onclick = () => { if(total() > 0) startRun(); };
+$("#toggleBtn").onclick = () => {
+  if(run.mode === "finished"){ resetRun(); return; }      // Dismiss: silence and rewind
+  if(run.pausedAt){                                        // Start / resume
+    run.lost += Date.now() - run.pausedAt;
+    run.pausedAt = 0;
+    setMode("running");
+    playTrack(elapsed());
+    startLoop();
+  }else{                                                   // Stop
+    run.pausedAt = Date.now();
+    setMode("stopped");
+    pauseTrack();
+    stopLoop();
+    paint();
+  }
+};
+$("#grid").onclick   = () => $("#toggleBtn").click();
+$("#resetBtn").onclick = resetRun;
+$("#editBtn").onclick  = stopRun;
+
+/* rAF is frozen while hidden, so catch up and nudge the track back into step */
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState !== "visible" || !run.on) return;
+  if(run.mode === "running"){
+    if(trackUrl && trackOK && (track.paused || Math.abs(track.currentTime - elapsed()) > 0.4))
+      playTrack(elapsed());
+    startLoop();
+  }
+  paint();
+});
+
+/* ═══════════════════════════════════════════════════════════════════════
+   12. Boot
+   ═══════════════════════════════════════════════════════════════════════ */
+function initFolds(){
+  const saved = store.get(KEY + "fold");
+  if(FOLDS.includes(saved)) $("#" + saved).open = true;
+
+  let syncing = false;
+  for(const id of FOLDS){
+    const d = $("#" + id);
+    d.addEventListener("toggle", () => {
+      if(syncing) return;
+      if(d.open){
+        syncing = true;
+        for(const f of FOLDS) if(f !== id) $("#" + f).open = false;
+        syncing = false;
+        /* a panel above may have just collapsed and pulled this one off-screen */
+        if(d.getBoundingClientRect().top < 0)
+          d.scrollIntoView({ block: "start", behavior: smooth() ? "smooth" : "auto" });
+      }
+      store.set(KEY + "fold", d.open ? id : "");
+    });
+  }
+}
+(function boot(){
+  applyConfig(readJSON(KEY + "cfg", null));
+  const saved = readJSON(KEY + "presets", []);
+  presets = Array.isArray(saved) ? saved.filter(p => p && typeof p.name === "string" && p.cfg) : [];
+
+  buildQuickChips(); buildPalette(); buildSoundChips(); buildToggles(); buildPicker();
+  refresh(); renderPresets();
+  initFolds(); initMediaSession();
+})();
+
+/* Offline support. Registered with a relative path so the app works from a
+   GitHub Pages subfolder as well as from a domain root. */
+if("serviceWorker" in navigator)
+  addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+</script>
+</body>
+</html>
